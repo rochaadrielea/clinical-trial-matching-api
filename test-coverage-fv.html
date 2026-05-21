@@ -70,6 +70,16 @@ h1{font-size:28px;font-weight:600;margin-bottom:4px}
 .edge-row:last-child{border-bottom:none}
 .edge-case{flex:1;color:var(--fg)}.edge-result{color:var(--fg2);min-width:180px}
 .footer{margin-top:32px;font-size:12px;color:var(--fg3);text-align:center}
+.field-table{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:4px}
+.field-row{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;gap:8px}
+.field-row:last-child{border-bottom:none}
+.field-row:nth-child(even){background:var(--bg2)}
+.field-header{background:var(--bg2);font-weight:600;font-size:11px;color:var(--fg2);text-transform:uppercase;letter-spacing:0.5px}
+.field-name{min-width:155px;font-family:var(--mono);font-size:12px}
+.field-req{min-width:65px;font-size:11px;text-align:center}
+.req-yes{color:var(--coral);font-weight:500}
+.req-no{color:var(--fg3)}
+.field-desc{flex:1;color:var(--fg2)}
 @media(max-width:600px){
 body{padding:20px 12px}
 h1{font-size:22px}
@@ -96,6 +106,10 @@ h1{font-size:22px}
 .topic-desc{width:100%;margin-left:0;margin-top:2px}
 .op-group-head{font-size:14px}
 .features{grid-template-columns:1fr !important}
+.field-row{flex-wrap:wrap}
+.field-name{min-width:auto;width:100%}
+.field-req{min-width:auto}
+.field-desc{width:100%}
 }
 </style>
 </head>
@@ -108,6 +122,7 @@ h1{font-size:22px}
   <div class="tab" onclick="showTab('tests')">Test coverage</div>
   <div class="tab" onclick="showTab('ops')">API operations</div>
   <div class="tab" onclick="showTab('edges')">Edge cases</div>
+  <div class="tab" onclick="showTab('model')">Data model</div>
 </div>
 
 <!-- SUMMARY -->
@@ -145,6 +160,70 @@ h1{font-size:22px}
 
 <!-- EDGE CASES -->
 <div id="edges" class="panel"><div id="edge-root"></div></div>
+
+<!-- DATA MODEL -->
+<div id="model" class="panel">
+<div class="op-group">
+<div class="op-group-head">Patient</div>
+<p style="font-size:13px;color:var(--fg2);margin-bottom:12px">What the system knows about a person in the healthcare system.</p>
+<div class="field-table">
+<div class="field-row field-header"><span class="field-name">Field</span><span class="field-req">Required</span><span class="field-desc">What it is</span></div>
+<div class="field-row"><span class="field-name"><code>name</code></span><span class="field-req req-yes">yes</span><span class="field-desc">Patient full name. Whitespace trimmed.</span></div>
+<div class="field-row"><span class="field-name"><code>date_of_birth</code></span><span class="field-req req-yes">yes</span><span class="field-desc">Birthday. Must be in the past. Used to calculate age for eligibility rules.</span></div>
+<div class="field-row"><span class="field-name"><code>gender</code></span><span class="field-req req-yes">yes</span><span class="field-desc">Any string ("male", "female", etc.). Lowercased automatically.</span></div>
+<div class="field-row"><span class="field-name"><code>conditions</code></span><span class="field-req req-no">no</span><span class="field-desc">List: <code>diabetes</code>, <code>hypertension</code>, or both. Duplicates removed.</span></div>
+<div class="field-row"><span class="field-name"><code>toxicity</code></span><span class="field-req req-no">no</span><span class="field-desc">List: <code>smoking</code>, <code>alcohol</code>, or both. Duplicates removed.</span></div>
+<div class="field-row"><span class="field-name"><code>allergies</code></span><span class="field-req req-no">no</span><span class="field-desc">List of any strings. Trimmed, lowercased, blanks removed.</span></div>
+<div class="field-row"><span class="field-name"><code>trial_participations</code></span><span class="field-req req-no">no</span><span class="field-desc">Existing enrollments. Each has <code>trial_id</code>, <code>start_date</code>, <code>end_date</code>. Used for exclusivity check.</span></div>
+</div>
+<p style="font-size:12px;color:var(--fg3);margin-top:8px"><strong>Auto-generated:</strong> <code>id</code> — UUID5 from name + date_of_birth. Same patient always gets the same ID.</p>
+</div>
+
+<div class="op-group">
+<div class="op-group-head">Clinical trial</div>
+<p style="font-size:13px;color:var(--fg2);margin-bottom:12px">A research study looking for patients who meet specific criteria.</p>
+<div class="field-table">
+<div class="field-row field-header"><span class="field-name">Field</span><span class="field-req">Required</span><span class="field-desc">What it is</span></div>
+<div class="field-row"><span class="field-name"><code>name</code></span><span class="field-req req-yes">yes</span><span class="field-desc">Trial name. Whitespace trimmed.</span></div>
+<div class="field-row"><span class="field-name"><code>eligibility_criteria</code></span><span class="field-req req-no">no</span><span class="field-desc">List of rules: <code>{"field","op","value"}</code>. Also accepts <code>criteria</code> as alias. If empty, all patients match.</span></div>
+<div class="field-row"><span class="field-name"><code>max_participants</code></span><span class="field-req req-yes">yes</span><span class="field-desc">Maximum patients allowed. Must be at least 1.</span></div>
+<div class="field-row"><span class="field-name"><code>min_participants</code></span><span class="field-req req-no">no</span><span class="field-desc">Minimum patients needed. Default: 0. Must be ≤ max.</span></div>
+<div class="field-row"><span class="field-name"><code>start_date</code></span><span class="field-req req-no">no</span><span class="field-desc">When the trial starts. Needed for exclusivity check.</span></div>
+<div class="field-row"><span class="field-name"><code>end_date</code></span><span class="field-req req-no">no</span><span class="field-desc">When the trial ends. Must be after start_date.</span></div>
+</div>
+<p style="font-size:12px;color:var(--fg3);margin-top:8px"><strong>Auto-generated:</strong> <code>id</code> — random UUID4. Different every time.</p>
+</div>
+
+<div class="op-group">
+<div class="op-group-head">Matching result</div>
+<p style="font-size:13px;color:var(--fg2);margin-bottom:12px">What the system produces when you run the matching algorithm. Immutable — never updated after creation.</p>
+<div class="field-table">
+<div class="field-row field-header"><span class="field-name">Field</span><span class="field-req">Auto</span><span class="field-desc">What it is</span></div>
+<div class="field-row"><span class="field-name"><code>id</code></span><span class="field-req req-no">auto</span><span class="field-desc">Unique ID for this matching run.</span></div>
+<div class="field-row"><span class="field-name"><code>run_datetime</code></span><span class="field-req req-no">auto</span><span class="field-desc">When the matching was executed.</span></div>
+<div class="field-row"><span class="field-name"><code>input_patients</code></span><span class="field-req req-no">auto</span><span class="field-desc">Snapshot of all patients considered. Frozen at run time.</span></div>
+<div class="field-row"><span class="field-name"><code>input_trials</code></span><span class="field-req req-no">auto</span><span class="field-desc">Snapshot of all trials considered. Frozen at run time.</span></div>
+<div class="field-row"><span class="field-name"><code>output_pairs</code></span><span class="field-req req-no">auto</span><span class="field-desc">List of (patient, trial) matches.</span></div>
+<div class="field-row"><span class="field-name"><code>exclusions</code></span><span class="field-req req-no">auto</span><span class="field-desc">List of excluded patients with reasons.</span></div>
+<div class="field-row"><span class="field-name"><code>summary</code></span><span class="field-req req-no">auto</span><span class="field-desc">Stats: patients considered, matched, unmatched, pairs, exclusions.</span></div>
+</div>
+<p style="font-size:12px;color:var(--fg3);margin-top:8px"><strong>Why immutable?</strong> Six months later, a regulator can see exactly what data the algorithm had and what it decided.</p>
+</div>
+
+<div class="op-group">
+<div class="op-group-head">Eligibility rule operators</div>
+<p style="font-size:13px;color:var(--fg2);margin-bottom:12px">Rules are data, not code. Combine any operator with any field.</p>
+<div class="field-table">
+<div class="field-row field-header"><span class="field-name">Operator</span><span class="field-req">Meaning</span><span class="field-desc">Works on</span></div>
+<div class="field-row"><span class="field-name"><code>eq</code></span><span class="field-req">equals</span><span class="field-desc">age, gender</span></div>
+<div class="field-row"><span class="field-name"><code>neq</code></span><span class="field-req">not equals</span><span class="field-desc">age, gender</span></div>
+<div class="field-row"><span class="field-name"><code>gt</code> / <code>gte</code></span><span class="field-req">greater than (or equal)</span><span class="field-desc">age</span></div>
+<div class="field-row"><span class="field-name"><code>lt</code> / <code>lte</code></span><span class="field-req">less than (or equal)</span><span class="field-desc">age</span></div>
+<div class="field-row"><span class="field-name"><code>contains</code></span><span class="field-req">list includes value</span><span class="field-desc">conditions, toxicity, allergies</span></div>
+<div class="field-row"><span class="field-name"><code>not_contains</code></span><span class="field-req">list excludes value</span><span class="field-desc">conditions, toxicity, allergies</span></div>
+</div>
+</div>
+</div>
 
 <div class="footer">Python 3.11+ · FastAPI · Pydantic v2 · 14 operations · 28 routes (singular + plural)</div>
 
