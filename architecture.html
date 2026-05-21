@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture — Clinical Trial Matching API</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#FBF4ED;color:#1B3A5C;padding:2rem 1rem;max-width:720px;margin:0 auto}
+  h1{font-size:1.8rem;font-weight:600;margin-bottom:4px}
+  .sub{font-size:14px;color:#7A8EA3;margin-bottom:24px}
+  .sub a{color:#0F8B8D;text-decoration:none}
+  .sub a:hover{text-decoration:underline}
+  .lb{font-size:11px;color:#7A8EA3;text-transform:uppercase;letter-spacing:0.6px;margin:18px 0 8px}
+  .b{border:1px solid #D3D1C7;border-radius:12px;padding:14px 18px;text-align:center;cursor:pointer;transition:all 0.2s;margin:0 auto;max-width:380px;background:white}
+  .b:hover{border-color:#888780;transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+  .b.active{border-width:2px}
+  .nm{font-size:15px;font-weight:600}
+  .rl{font-size:12px;color:#7A8EA3;margin-top:2px}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+  .ar{text-align:center;color:#B4B2A9;font-size:20px;margin:6px 0 2px}
+  .al{text-align:center;color:#7A8EA3;font-size:11px;margin-bottom:4px}
+  .mid{display:flex;gap:10px;justify-content:center}
+  .mid .b{flex:1;max-width:200px;min-width:130px}
+  .dt{background:white;border-radius:12px;padding:16px 18px;margin:10px auto;font-size:13px;color:#3D4F63;line-height:1.7;max-width:620px;display:none;border-left:4px solid #0F8B8D;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+  .dt.on{display:block}
+  .dt strong{color:#1B3A5C;font-weight:600}
+  .dt code{background:#F0EBE3;padding:2px 6px;border-radius:4px;font-family:'Consolas','Fira Code',monospace;font-size:12px}
+  .calls{margin-top:10px;padding-top:10px;border-top:1px solid #F0EBE3}
+  .calls-label{font-size:11px;color:#7A8EA3;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+  .call-tag{display:inline-block;background:#F0EBE3;color:#1B3A5C;padding:3px 10px;border-radius:6px;font-size:12px;margin:2px 4px 2px 0;font-family:'Consolas',monospace}
+  .c-teal{border-color:#0F8B8D}.c-teal .dot{background:#0F8B8D}.c-teal.active{border-color:#0F8B8D}
+  .c-coral{border-color:#E8593C}.c-coral .dot{background:#E8593C}.c-coral.active{border-color:#E8593C}
+  .c-purple{border-color:#7F77DD}.c-purple .dot{background:#7F77DD}.c-purple.active{border-color:#7F77DD}
+  .c-blue{border-color:#378ADD}.c-blue .dot{background:#378ADD}.c-blue.active{border-color:#378ADD}
+  .c-gray{border-color:#888780}.c-gray .dot{background:#888780}.c-gray.active{border-color:#888780}
+  .footer{font-size:12px;color:#7A8EA3;margin-top:24px;text-align:center;padding-top:16px;border-top:1px solid #E8E0D6}
+  @media(max-width:500px){.mid{flex-direction:column;align-items:center}.mid .b{max-width:380px;width:100%}.ar-split{display:none}}
+</style>
+</head>
+<body>
+
+<h1>How the files talk to each other</h1>
+<p class="sub">Click any box to see what it does, who it calls, and why. <a href="https://github.com/rochaadrielea/clinical-trial-matching-api">View on GitHub</a></p>
+
+<div class="lb">External — verification</div>
+<div class="b c-gray" onclick="toggle('d0',this)">
+  <div class="nm"><span class="dot"></span>tests.py</div>
+  <div class="rl">Proof that it all works</div>
+</div>
+<div id="d0" class="dt">
+  <strong>tests.py</strong> sits outside the system. It imports <code>solution.py</code> and calls every endpoint to verify the system works — creates patients, sends bad data, runs matchings, checks that the right thing happens every time.
+  <div class="calls">
+    <div class="calls-label">Imports</div>
+    <span class="call-tag">solution.py</span>
+    <span class="call-tag">models.py</span>
+  </div>
+</div>
+
+<div class="ar">↓</div>
+<div class="al">imports app from</div>
+
+<div class="lb">Entry point — the API</div>
+<div class="b c-teal" onclick="toggle('d1',this)">
+  <div class="nm"><span class="dot"></span>solution.py</div>
+  <div class="rl">How the outside world talks to the system</div>
+</div>
+<div id="d1" class="dt">
+  <strong>solution.py</strong> is the front door. It defines all 28 routes (14 unique operations with singular + plural paths). When a request arrives, it delegates immediately:
+  <br><br>
+  <code>POST /patients</code> → hands data to <strong>storage.py</strong> to save<br>
+  <code>POST /matchings</code> → pulls patients and trials from <strong>storage.py</strong>, sends them to <strong>matching.py</strong><br>
+  <code>GET /patients</code> → asks <strong>storage.py</strong> for the list, optionally asks <strong>security.py</strong> to mask PII<br>
+  <code>GET /audit/events</code> → asks <strong>audit.py</strong> to filter events
+  <br><br>
+  It contains zero business logic — only routing, input validation (via Pydantic), and response formatting.
+  <div class="calls">
+    <div class="calls-label">Imports</div>
+    <span class="call-tag">storage.py</span>
+    <span class="call-tag">matching.py</span>
+    <span class="call-tag">security.py</span>
+    <span class="call-tag">audit.py</span>
+    <span class="call-tag">models.py</span>
+  </div>
+</div>
+
+<div class="ar">↓ <span class="ar-split">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓</span></div>
+<div class="al">stores data &nbsp;&nbsp;&nbsp; runs matching &nbsp;&nbsp;&nbsp; masks PII</div>
+
+<div class="lb">Business logic — three separate jobs</div>
+<div class="mid">
+  <div class="b c-coral" onclick="toggle('d2',this)">
+    <div class="nm"><span class="dot"></span>storage.py</div>
+    <div class="rl">Where data lives</div>
+  </div>
+  <div class="b c-purple" onclick="toggle('d3',this)">
+    <div class="nm"><span class="dot"></span>matching.py</div>
+    <div class="rl">The matching engine</div>
+  </div>
+  <div class="b c-teal" onclick="toggle('d4',this)">
+    <div class="nm"><span class="dot"></span>security.py</div>
+    <div class="rl">Who sees what</div>
+  </div>
+</div>
+<div id="d2" class="dt" style="border-left-color:#E8593C">
+  <strong>storage.py</strong> has three repository classes: <code>PatientRepo</code>, <code>TrialRepo</code>, <code>MatchingRepo</code>. Each stores data in a Python dictionary (in-memory). Every time it saves something, it also calls <strong>audit.py</strong> to log the event.
+  <br><br>
+  It handles batch processing too — when a list of patients arrives, it validates each one separately, saves the good ones, and quarantines the bad ones with reasons.
+  <br><br>
+  The repository pattern means swapping these dictionaries for a real database only requires changing this one file. Nothing else touches storage directly.
+  <div class="calls">
+    <div class="calls-label">Imports</div>
+    <span class="call-tag">audit.py</span>
+    <span class="call-tag">models.py</span>
+  </div>
+</div>
+<div id="d3" class="dt" style="border-left-color:#7F77DD">
+  <strong>matching.py</strong> is a pure function — data in, results out. It runs the three-stage pipeline:
+  <br><br>
+  <strong>Stage 1: Rule evaluator</strong> — checks each patient against each trial's eligibility rules using the <code>{field, op, value}</code> pattern.<br>
+  <strong>Stage 2: Exclusivity check</strong> — blocks patients already enrolled in an overlapping trial.<br>
+  <strong>Stage 3: Capacity filter</strong> — respects min/max participants per trial.
+  <br><br>
+  For every patient excluded, it records <em>why</em> — which rule failed and what the patient's actual value was. No storage, no API calls, no side effects.
+  <div class="calls">
+    <div class="calls-label">Imports</div>
+    <span class="call-tag">models.py</span>
+  </div>
+</div>
+<div id="d4" class="dt">
+  <strong>security.py</strong> contains the PII masking functions. It takes a patient object and returns a copy with the name redacted (<code>"Alice Smith"</code> → <code>"A. Smith"</code>) and date of birth hidden (<code>"1985-03-15"</code> → <code>"1985-XX-XX"</code>).
+  <br><br>
+  It only reads data — never modifies, saves, or logs anything. In production this would be controlled by OAuth2 roles. For the assessment, it's toggled by a <code>?full=true</code> query parameter.
+  <div class="calls">
+    <div class="calls-label">Imports</div>
+    <span class="call-tag">models.py</span>
+  </div>
+</div>
+
+<div class="ar">↓</div>
+<div class="al">logs every write to</div>
+
+<div class="lb">Record keeping — the audit trail</div>
+<div class="b c-coral" onclick="toggle('d5',this)" style="max-width:220px">
+  <div class="nm"><span class="dot"></span>audit.py</div>
+  <div class="rl">What happened and when</div>
+</div>
+<div id="d5" class="dt" style="border-left-color:#E8593C">
+  <strong>audit.py</strong> is an append-only event log. Every time <strong>storage.py</strong> creates a patient, rejects a bad record, adds a trial, or stores a matching result, it calls <code>audit.append()</code> with a timestamped event.
+  <br><br>
+  Nothing is ever updated or deleted — events only accumulate. The log supports filtering by entity type, entity ID, event type, and date range.
+  <br><br>
+  Six months later, a regulator asks "what happened to patient X?" — the answer is in this log.
+  <div class="calls">
+    <div class="calls-label">Imports</div>
+    <span class="call-tag">models.py</span>
+  </div>
+</div>
+
+<div class="ar">↓</div>
+
+<div class="lb">Foundation — every file imports this</div>
+<div class="b c-blue" onclick="toggle('d6',this)" style="max-width:380px">
+  <div class="nm"><span class="dot"></span>models.py</div>
+  <div class="rl">What the data looks like — the contract</div>
+</div>
+<div id="d6" class="dt" style="border-left-color:#378ADD">
+  <strong>models.py</strong> is the foundation of the entire system. It defines every data type using Pydantic v2: <code>Patient</code>, <code>Trial</code>, <code>Matching</code>, <code>AuditEvent</code>, <code>EligibilityCriterion</code>, and more.
+  <br><br>
+  Every other file imports from it. It enforces validation rules — enums for conditions and toxicity (only allowed values accepted), date checks (no future birthdays), constraint validation (min ≤ max participants).
+  <br><br>
+  It calls nothing and imports nothing from the project. It's the bottom of the dependency tree. To understand the system, start here.
+  <div class="calls">
+    <div class="calls-label">Imports</div>
+    <span class="call-tag">pydantic</span>
+    <span class="call-tag">uuid</span>
+    <span class="call-tag">datetime</span>
+  </div>
+</div>
+
+<div class="footer">
+  Every arrow points downward — no file ever calls upward. <code>solution.py</code> is the only entry point.
+  <br>Clinical Trial Matching API · <a href="https://github.com/rochaadrielea/clinical-trial-matching-api" style="color:#0F8B8D">GitHub</a>
+</div>
+
+<script>
+function toggle(id, el) {
+  var all = document.querySelectorAll('.dt');
+  var target = document.getElementById(id);
+  var wasOpen = target.classList.contains('on');
+  for (var i = 0; i < all.length; i++) all[i].classList.remove('on');
+  document.querySelectorAll('.b').forEach(function(b){b.classList.remove('active')});
+  if (!wasOpen) {
+    target.classList.add('on');
+    el.classList.add('active');
+  }
+}
+</script>
+</body>
+</html>
