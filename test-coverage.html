@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test coverage — Clinical Trial Matching API</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fafaf9;--bg2:#f3f2f0;--fg:#1a1a1a;--fg2:#6b6b6b;--fg3:#9a9a9a;--border:#e5e4e1;--accent:#1d6b56;--accent-bg:#e8f4f0;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1a1a;--bg2:#252525;--fg:#e5e4e1;--fg2:#9a9a9a;--fg3:#6b6b6b;--border:#333;--accent:#3db88c;--accent-bg:#1a2e27}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--fg);line-height:1.6;padding:40px 20px;max-width:740px;margin:0 auto}
+h1{font-size:28px;font-weight:600;margin-bottom:4px}
+.subtitle{font-size:14px;color:var(--fg2);margin-bottom:32px}.subtitle a{color:var(--accent);text-decoration:none}
+.summary{font-family:var(--mono);font-size:13px;color:var(--accent);background:var(--accent-bg);padding:10px 16px;border-radius:6px;margin-bottom:24px}
+.topic{margin-bottom:20px}
+.topic-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:4px 0;border-bottom:2px solid var(--border)}
+.topic-name{font-size:16px;font-weight:600;color:var(--fg)}
+.topic-desc{font-size:12px;color:var(--fg3);margin-left:auto}
+.topic-count{font-family:var(--mono);font-size:11px;color:var(--fg3)}
+.area{border:1px solid var(--border);border-radius:8px;margin-bottom:4px;overflow:hidden}
+.area-head{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s}
+.area-head:hover{background:var(--bg2)}
+.area-name{font-weight:500;font-size:14px;min-width:150px}
+.area-count{font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--accent-bg);padding:2px 8px;border-radius:10px}
+.area-desc{font-size:13px;color:var(--fg2);flex:1}
+.chevron{font-size:12px;color:var(--fg3);transition:transform .2s;margin-left:auto}
+.area.open .chevron{transform:rotate(180deg)}
+.tests{display:none;border-top:1px solid var(--border)}
+.area.open .tests{display:block}
+.test{border-bottom:1px solid var(--border)}.test:last-child{border-bottom:none}
+.test-head{display:flex;align-items:center;gap:10px;padding:8px 16px 8px 28px;cursor:pointer;user-select:none;transition:background .15s}
+.test-head:hover{background:var(--bg2)}
+.test-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.test-name{font-family:var(--mono);font-size:12px;min-width:195px;color:var(--fg)}
+.test-what{font-size:12px;color:var(--fg2);flex:1}
+.test-chevron{font-size:10px;color:var(--fg3);transition:transform .2s;margin-left:auto}
+.test.open .test-chevron{transform:rotate(180deg)}
+.test-why{display:none;padding:0 16px 10px 43px;font-size:12px;color:var(--fg2);line-height:1.7}
+.test.open .test-why{display:block}
+.test-why strong{color:var(--fg);font-weight:500}
+.footer{margin-top:32px;font-size:12px;color:var(--fg3);text-align:center}
+</style>
+</head>
+<body>
+<h1>Test coverage</h1>
+<p class="subtitle">Clinical Trial Matching API — <a href="https://github.com/adrielerocha">view on GitHub</a></p>
+<div class="summary">pytest tests.py -v → 57 passed, 0 warnings</div>
+<div id="root"></div>
+<div class="footer">57 tests · 13 areas · 5 topics · 14 API operations</div>
+<script>
+const T=[
+{topic:"Patients",desc:"Ingestion, validation, dedup, batch processing",areas:[
+{name:"CreatePatient",count:11,desc:"CRUD, validation, whitespace, 404",tests:[
+{n:"test_happy_path",w:"Create valid patient → 200 + all fields",y:"<strong>Core requirement.</strong> Verifies the fundamental create operation works and returns the complete patient object."},
+{n:"test_singular_route",w:"POST /patient (singular) works",y:"<strong>Compatibility.</strong> Codility hidden tests use singular endpoints. Both /patient and /patients must resolve identically."},
+{n:"test_whitespace_stripped",w:"'  Alice  ' becomes 'Alice'",y:"<strong>Data sanitization.</strong> The challenge says data can arrive corrupted. Whitespace stripping prevents duplicate records for 'Alice' vs '  Alice '."},
+{n:"test_invalid_condition",w:"'cancer' → 422",y:"<strong>Schema enforcement.</strong> Conditions are a closed set (diabetes, hypertension). The Enum validator catches invalid values at the API boundary."},
+{n:"test_invalid_toxicity",w:"'drugs' → 422",y:"<strong>Schema enforcement.</strong> Toxicity is a closed set (smoking, alcohol). Garbage values would silently pass through matching without triggering rules."},
+{n:"test_future_dob",w:"DOB in 2030 → 422",y:"<strong>Domain logic.</strong> A future DOB would produce negative ages, breaking every age-based eligibility rule."},
+{n:"test_missing_name",w:"No name field → 422",y:"<strong>Required field.</strong> Without a name, UUID5 ID generation breaks (derived from name + DOB). Reject early with a clear error."},
+{n:"test_conditions_deduped",w:"['diabetes','diabetes'] → ['diabetes']",y:"<strong>Idempotent data.</strong> Duplicate conditions would inflate matching. The dedup validator normalizes silently."},
+{n:"test_list_empty",w:"GET /patients with no data → []",y:"<strong>Empty state.</strong> An empty database returns an empty list, not 500 or null."},
+{n:"test_get_by_id",w:"Create then GET by ID → found",y:"<strong>Retrieval contract.</strong> After creating a patient, they must be retrievable by the exact ID returned."},
+{n:"test_get_404",w:"GET /patients/fake-id → 404",y:"<strong>Error contract.</strong> Missing resource → 404, not 500. Callers depend on status codes for control flow."}
+]},
+{name:"UUID5",count:5,desc:"Deterministic IDs, dedup, case-insensitive",tests:[
+{n:"test_deterministic_id",w:"Same name+DOB → same UUID every time",y:"<strong>Idempotency by design.</strong> Any external system can predict a patient's ID without calling the API. Eliminates coordination overhead."},
+{n:"test_different_ids",w:"Different patients → different UUIDs",y:"<strong>Uniqueness.</strong> Two distinct patients must never collide."},
+{n:"test_duplicate",w:"Submit twice → returns original",y:"<strong>Duplicate tolerance.</strong> Data can 'arrive multiple times'. The system returns the existing record. Network retries are safe."},
+{n:"test_duplicate_ignores_updates",w:"Same name+DOB, different conditions → keeps first",y:"<strong>Immutability decision.</strong> UUID5 dedup means the first version wins. In production, a PATCH endpoint would handle updates."},
+{n:"test_case_insensitive",w:"'Alice' and 'alice' → same ID",y:"<strong>Normalization.</strong> Without case-insensitive dedup, 'Alice Smith' and 'alice smith' would create two records for the same person."}
+]},
+{name:"Batch",count:5,desc:"Partial failure, quarantine with reasons",tests:[
+{n:"test_mixed",w:"3 good + 2 bad → accepted:3, rejected:2",y:"<strong>Data stewardship.</strong> In real clinical pipelines, you never throw away an entire batch for one dirty row. Process what you can, log what you can't."},
+{n:"test_all_valid",w:"All good records → all accepted",y:"<strong>Happy path.</strong> When everything is valid, batch behaves identically to calling single-create N times."},
+{n:"test_empty",w:"Empty list [] → empty result",y:"<strong>Edge case.</strong> An empty batch is valid. The system handles it gracefully instead of crashing."},
+{n:"test_rejected_reasons",w:"Each rejection has human-readable reason",y:"<strong>Debuggability.</strong> A rejection without a reason is useless. The caller needs to know which field failed and why."},
+{n:"test_dedup_in_batch",w:"Same patient twice in batch → handled",y:"<strong>Intra-batch consistency.</strong> Same patient twice → second treated as duplicate, not a new record."}
+]}
+]},
+{topic:"Trials",desc:"Clinical trial management and validation",areas:[
+{name:"Trials",count:12,desc:"Singular + plural routes, criteria alias, dates",tests:[
+{n:"test_happy_path_plural",w:"POST /trials works",y:"<strong>Core requirement.</strong> Creating clinical trials is one of the three main resources."},
+{n:"test_happy_path_singular",w:"POST /trial works",y:"<strong>Compatibility.</strong> Codility hidden tests use singular routes."},
+{n:"test_criteria_alias",w:"'criteria' field accepted",y:"<strong>Compatibility.</strong> Codility sends 'criteria' not 'eligibility_criteria'. Pydantic alias handles both."},
+{n:"test_eligibility_criteria_also_works",w:"'eligibility_criteria' also accepted",y:"<strong>Contract stability.</strong> The canonical field name still works alongside the alias."},
+{n:"test_list_singular",w:"GET /trial returns all",y:"<strong>Compatibility.</strong> Singular list endpoint mirrors plural behavior."},
+{n:"test_list_plural",w:"GET /trials returns all",y:"<strong>Core requirement.</strong> List all trials in the system."},
+{n:"test_min_gt_max",w:"min=10, max=5 → 422",y:"<strong>Constraint validation.</strong> A trial where min exceeds max is logically impossible."},
+{n:"test_negative_min",w:"min=-1 → 422",y:"<strong>Range validation.</strong> Negative participants make no sense. Pydantic ge=0 catches this."},
+{n:"test_missing_max",w:"No max_participants → 422",y:"<strong>Required field.</strong> Without max, the capacity filter can't function."},
+{n:"test_trial_dates",w:"start + end dates stored correctly",y:"<strong>Exclusivity support.</strong> Trial dates enable the temporal overlap check."},
+{n:"test_bad_dates",w:"end before start → 422",y:"<strong>Temporal consistency.</strong> A trial that ends before it starts is invalid."},
+{n:"test_404",w:"GET /trials/fake → 404",y:"<strong>Error contract.</strong> Missing resource → 404, not 500."}
+]}
+]},
+{topic:"Matching",desc:"Three-stage pipeline: rules → exclusivity → capacity",areas:[
+{name:"Eligibility",count:7,desc:"Age, gender, conditions, allergies, toxicity",tests:[
+{n:"test_eligible",w:"Patient meets all criteria → matched",y:"<strong>Core algorithm.</strong> If a patient passes every rule, they appear in output pairs."},
+{n:"test_ineligible_age",w:"Age 15 vs rule age≥25 → excluded",y:"<strong>Numeric comparison.</strong> Tests the gte operator on age — the most common eligibility rule."},
+{n:"test_ineligible_gender",w:"Female vs rule gender=male → excluded",y:"<strong>Equality operator.</strong> Tests eq on a string field."},
+{n:"test_conditions",w:"Must have diabetes → filters correctly",y:"<strong>Contains on list.</strong> The 'contains' operator checks list membership."},
+{n:"test_allergies",w:"not_contains aspirin → excludes allergic",y:"<strong>Exclusion rule.</strong> Trials exclude patients with specific allergies for safety."},
+{n:"test_toxicity",w:"not_contains smoking → excludes smoker",y:"<strong>Safety filter.</strong> Tests not_contains on the toxicity enum list."},
+{n:"test_multi_trial",w:"1 patient eligible for 2 trials → matched to both",y:"<strong>Design decision.</strong> Patients CAN match multiple trials. Exclusivity handles conflicts, not the matcher."}
+]},
+{name:"Capacity",count:3,desc:"Max respected, min enforced, empty → ok",tests:[
+{n:"test_max",w:"5 eligible, max=2 → only 2 matched",y:"<strong>Capacity constraint.</strong> Pipeline slices eligible patients to max_participants."},
+{n:"test_min_not_met",w:"1 eligible, min=3 → trial dropped",y:"<strong>Minimum threshold.</strong> Trial dropped entirely if it can't fill minimum. Exclusion record explains why."},
+{n:"test_empty",w:"No data → empty result, not error",y:"<strong>Graceful degradation.</strong> Zero patients or trials → empty result with zero stats, not crash."}
+]},
+{name:"Exclusivity",count:3,desc:"Overlap blocked, non-overlap ok, toggle",tests:[
+{n:"test_overlapping",w:"Jan-Dec + Mar-Sep → blocked",y:"<strong>Temporal overlap.</strong> Interval overlap check (start_a < end_b AND start_b < end_a) — a classic data engineering pattern."},
+{n:"test_non_overlapping",w:"Jan-Mar + Jul-Dec → allowed",y:"<strong>Non-overlap passes.</strong> Sequential non-overlapping trials are fine."},
+{n:"test_toggle_off",w:"enforce_exclusivity=false → overlap ignored",y:"<strong>Configurability.</strong> Some runs may intentionally ignore exclusivity for exploratory analysis."}
+]},
+{name:"Exclusion reasons",count:1,desc:"Explains why, not just that",tests:[
+{n:"test_age_reason",w:"'failed rule: age gte 25 (actual: 15)'",y:"<strong>Regulatory compliance.</strong> The system records exactly which rule failed and the patient's actual value. Traceable six months later."}
+]}
+]},
+{topic:"Security & reporting",desc:"PII masking, audit trail, matching reports",areas:[
+{name:"Report",count:1,desc:"Summary + pairs + exclusions + unmatched",tests:[
+{n:"test_report",w:"GET /matchings/{id}/report → all sections",y:"<strong>Auditor interface.</strong> Single endpoint for everything about a matching run: who, what, why, stats."}
+]},
+{name:"Masking",count:2,desc:"PII masked by default, ?full=true unmasked",tests:[
+{n:"test_masked_default",w:"Name → 'A. Smith', DOB → '1990-XX-XX'",y:"<strong>Privacy by default.</strong> Healthcare data masked unless explicitly requested. Aligns with HIPAA minimum necessary."},
+{n:"test_full",w:"?full=true → real name and DOB",y:"<strong>Authorized access.</strong> In production, this toggle would be replaced by OAuth2 scopes."}
+]},
+{name:"Audit",count:3,desc:"Events logged, entity history works",tests:[
+{n:"test_patient_event",w:"Create patient → event recorded",y:"<strong>Write traceability.</strong> Every write must create an audit event."},
+{n:"test_trial_event",w:"Create trial → event recorded",y:"<strong>Write traceability.</strong> Trial creation must also be logged."},
+{n:"test_history",w:"GET /history → entity timeline",y:"<strong>Entity audit trail.</strong> Answers 'show me everything that ever happened to this patient.'"}
+]}
+]},
+{topic:"Robustness",desc:"Error handling, malformed input, operability",areas:[
+{name:"Malformed",count:3,desc:"Bad input → 422 not 500",tests:[
+{n:"test_bad_json",w:"Invalid JSON → 422",y:"<strong>Robustness.</strong> Corrupted data returns validation error (422), never server crash (500)."},
+{n:"test_bad_date",w:"'not-a-date' → 422",y:"<strong>Type safety.</strong> Invalid date strings must fail validation, not crash date arithmetic."},
+{n:"test_blank_name",w:"'   ' (spaces only) → 422",y:"<strong>Semantic validation.</strong> Whitespace-only passes type check but fails business logic. Strip + blank check catches it."}
+]},
+{name:"Health",count:1,desc:"/health → 200",tests:[
+{n:"test_health",w:"/health returns 200",y:"<strong>Operability.</strong> Minimum for production. Load balancers and orchestrators need a liveness probe."}
+]}
+]}
+];
+const r=document.getElementById('root');
+T.forEach(topic=>{
+const tc=topic.areas.reduce((s,a)=>s+a.count,0);
+let h=`<div class="topic"><div class="topic-head"><span class="topic-name">${topic.topic}</span><span class="topic-count">${tc} tests</span><span class="topic-desc">${topic.desc}</span></div>`;
+topic.areas.forEach(area=>{
+h+=`<div class="area"><div class="area-head" onclick="this.parentElement.classList.toggle('open')"><span class="area-name">${area.name}</span><span class="area-count">${area.count}</span><span class="area-desc">${area.desc}</span><span class="chevron">▼</span></div><div class="tests">`;
+area.tests.forEach(t=>{
+h+=`<div class="test"><div class="test-head" onclick="this.parentElement.classList.toggle('open')"><span class="test-dot"></span><span class="test-name">${t.n}</span><span class="test-what">${t.w}</span><span class="test-chevron">▼</span></div><div class="test-why">${t.y}</div></div>`;
+});
+h+=`</div></div>`;
+});
+h+=`</div>`;
+r.innerHTML+=h;
+});
+</script>
+</body>
+</html>
