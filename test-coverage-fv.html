@@ -12,8 +12,8 @@
 body{font-family:var(--sans);background:var(--bg);color:var(--fg);line-height:1.6;padding:40px 20px;max-width:800px;margin:0 auto}
 h1{font-size:28px;font-weight:600;margin-bottom:4px}
 .subtitle{font-size:14px;color:var(--fg2);margin-bottom:24px}.subtitle a{color:var(--accent);text-decoration:none}
-.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px}
-.tab{padding:10px 20px;font-size:14px;font-weight:500;color:var(--fg3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;user-select:none}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{padding:10px 16px;font-size:14px;font-weight:500;color:var(--fg3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;user-select:none;white-space:nowrap;flex-shrink:0}
 .tab:hover{color:var(--fg2)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .panel{display:none}.panel.active{display:block}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
@@ -70,6 +70,33 @@ h1{font-size:28px;font-weight:600;margin-bottom:4px}
 .edge-row:last-child{border-bottom:none}
 .edge-case{flex:1;color:var(--fg)}.edge-result{color:var(--fg2);min-width:180px}
 .footer{margin-top:32px;font-size:12px;color:var(--fg3);text-align:center}
+@media(max-width:600px){
+body{padding:20px 12px}
+h1{font-size:22px}
+.stats{grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{padding:12px}
+.stat-num{font-size:22px}
+.pipeline{gap:0;justify-content:center}
+.pipe-step{padding:6px 10px;font-size:11px}
+.pipe-arrow{font-size:12px;padding:0 2px}
+.area-head{flex-wrap:wrap;gap:6px;padding:10px}
+.area-name{min-width:auto;font-size:13px}
+.area-desc{font-size:11px;width:100%;margin-top:2px}
+.test-head{flex-wrap:wrap;gap:4px;padding:8px 10px 8px 16px}
+.test-name{min-width:auto;font-size:11px;width:100%}
+.test-what{font-size:11px;width:100%;padding-left:13px}
+.test-why{padding:0 10px 10px 16px;font-size:11px}
+.op-row{flex-wrap:wrap;gap:6px;padding:10px}
+.op-method{min-width:44px;font-size:10px}
+.op-path{min-width:auto;font-size:12px}
+.op-desc{width:100%;font-size:11px;padding-left:52px}
+.edge-row{flex-wrap:wrap;gap:2px;padding:6px 12px 6px 16px}
+.edge-result{min-width:auto;width:100%;padding-left:0;font-size:11px}
+.topic-head{flex-wrap:wrap}
+.topic-desc{width:100%;margin-left:0;margin-top:2px}
+.op-group-head{font-size:14px}
+.features{grid-template-columns:1fr !important}
+}
 </style>
 </head>
 <body>
@@ -103,7 +130,7 @@ h1{font-size:28px;font-weight:600;margin-bottom:4px}
 <p style="font-size:14px;font-weight:500;margin-bottom:8px">What this system does</p>
 <p style="font-size:13px;color:var(--fg2);margin-bottom:16px">A hospital has patients and open clinical trials. This API takes both as input and automatically matches patients to trials they're eligible for — with a full explanation of every decision.</p>
 <p style="font-size:14px;font-weight:500;margin-bottom:8px">Key features</p>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;color:var(--fg2)">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;color:var(--fg2)" class="features">
   <div>• Rule-based eligibility (data, not code)</div><div>• Partial batch processing (quarantine)</div>
   <div>• Three-stage matching pipeline</div><div>• Deterministic UUID5 patient IDs</div>
   <div>• Exclusion reasons for every decision</div><div>• PII masking by default</div>
